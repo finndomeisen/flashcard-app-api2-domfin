@@ -5,10 +5,7 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import styles from '../styles';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Alert } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-
 
 type Deck = {
   id: string;
@@ -21,8 +18,6 @@ type Card = {
   question: string;
   answer: string;
 };
-
-
 
 export function DeckDetail() {
   const { id } = useLocalSearchParams();
@@ -76,23 +71,15 @@ export function DeckDetail() {
         data={deck.cards || []}
         keyExtractor={(_, index) => index.toString()}
         renderItem={({ item }) => (
-      <View style={styles.card}>
-        <Text style={styles.cardQuestion}>{item.question}</Text>
-        <Text style={styles.cardAnswer}>{item.answer}</Text>
-      </View>
-  )}
-/>
-
+          <View style={styles.card}>
+            <Text style={styles.cardQuestion}>{item.question}</Text>
+            <Text style={styles.cardAnswer}>{item.answer}</Text>
+          </View>
+        )}
+      />
     </View>
   );
 }
-
-
-
-
-
-
-
 
 const Item = ({ id, title, color, cardCount, onPress, decks, setDecks }: { 
   id: string; 
@@ -105,55 +92,33 @@ const Item = ({ id, title, color, cardCount, onPress, decks, setDecks }: {
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [newTitle, setNewTitle] = useState(title);
-  const gradientColors: [string, string] = [color, '#ffffff']; // Anpassen des Farbverlaufs
-
-
+  const [newColor, setNewColor] = useState(color);
+  const gradientColors: [string, string] = [newColor, '#ffffff'];
 
   const saveDecks = async (updatedDecks: Deck[]) => {
     await AsyncStorage.setItem('decks', JSON.stringify(updatedDecks));
     setDecks(updatedDecks);
   };
 
-
-
-
-
-
-
-  const handleLongPress = () => {
-    //  Platzhalter-Menü via Alert
-    Alert.alert(
-      'Deck Optionen',
-      `Was willst du mit "${title}" machen?`,
-      [
-        { text: 'Abbrechen', style: 'cancel' },
-        
-        { text: 'Bearbeiten', onPress: () => setModalVisible(true),},
-
-        { text: 'Löschen', onPress: () => {
-            const filtered = decks.filter(deck => deck.id !== id);
-            saveDecks(filtered);
-          },
-          style: 'destructive',
-        },
-      ]
-    );
-  };
-
   const handleSave = () => {
     const updated = decks.map(deck =>
-      deck.id === id ? { ...deck, title: newTitle } : deck
+      deck.id === id ? { ...deck, title: newTitle, color: newColor } : deck
     );
     saveDecks(updated);
     setModalVisible(false);
   };
 
+  const handleDelete = () => {
+    const filtered = decks.filter(deck => deck.id !== id);
+    saveDecks(filtered);
+    setModalVisible(false);
+  };
 
-
+  const predefinedColors = ['#FF7F50', '#6495ED', '#90EE90', '#FFD700', '#FF69B4'];
 
   return (
     <>
-      <TouchableOpacity onPress={onPress} onLongPress={handleLongPress} style={styles.cardWrapper}>
+      <TouchableOpacity onPress={onPress} onLongPress={() => setModalVisible(true)} style={styles.cardWrapper}>
         <LinearGradient
           colors={gradientColors}
           start={{ x: 0, y: 0 }}
@@ -167,14 +132,39 @@ const Item = ({ id, title, color, cardCount, onPress, decks, setDecks }: {
 
       <Modal visible={modalVisible} transparent={true} animationType="slide">
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#00000099' }}>
-          <View style={{ backgroundColor: 'white', padding: 20, width: '80%', borderRadius: 10 }}>
-            <Text style={{ marginBottom: 10 }}>Neuer Deckname:</Text>
+          <View style={{ backgroundColor: 'white', padding: 20, width: '85%', borderRadius: 10 }}>
+            <Text style={{ marginBottom: 10 }}>Deck bearbeiten</Text>
+
+            <Text style={{ marginTop: 10 }}>Titel:</Text>
             <TextInput
               value={newTitle}
               onChangeText={setNewTitle}
-              style={{ borderWidth: 1, padding: 8, marginBottom: 20 }}
+              style={{ borderWidth: 1, padding: 8, marginBottom: 10 }}
             />
+
+            <Text>Farbe wählen:</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginVertical: 10 }}>
+              {predefinedColors.map((col) => (
+                <TouchableOpacity
+                  key={col}
+                  onPress={() => setNewColor(col)}
+                  style={{
+                    backgroundColor: col,
+                    width: 30,
+                    height: 30,
+                    margin: 5,
+                    borderRadius: 15,
+                    borderWidth: newColor === col ? 2 : 0,
+                    borderColor: 'black'
+                  }}
+                />
+              ))}
+            </View>
+
             <Button title="Speichern" onPress={handleSave} />
+            <View style={{ height: 10 }} />
+            <Button title="Deck löschen" color="red" onPress={handleDelete} />
+            <View style={{ height: 10 }} />
             <Button title="Abbrechen" color="gray" onPress={() => setModalVisible(false)} />
           </View>
         </View>
@@ -182,10 +172,6 @@ const Item = ({ id, title, color, cardCount, onPress, decks, setDecks }: {
     </>
   );
 };
-
-
-
-
 
 export default function AppIndex() {
   const router = useRouter();
@@ -223,7 +209,6 @@ export default function AppIndex() {
         </TouchableOpacity>
       </View>
 
-
       <FlatList
         data={decks}
         renderItem={({ item }) => (
@@ -238,14 +223,11 @@ export default function AppIndex() {
           />
         )}
         keyExtractor={(item) => item.id}
-        numColumns={2} // Hier die zwei Spalten aktivieren
-        columnWrapperStyle={styles.columnWrapper} // optional für spacing zwischen den Karten
+        numColumns={2}
+        columnWrapperStyle={styles.columnWrapper}
       />
-
     </View>
   );
 }
 
 
-
-//sers
