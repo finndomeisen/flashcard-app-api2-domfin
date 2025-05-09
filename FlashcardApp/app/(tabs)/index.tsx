@@ -16,8 +16,11 @@ type Deck = {
 
 type Card = {
   question: string;
-  answer: string;
+  type: 'classic' | 'quiz';
+  answer?: string; // Nur für classic
+  answers?: { text: string; correct: boolean }[]; // Nur für quiz
 };
+
 
 export function DeckDetail() {
   const { id } = useLocalSearchParams();
@@ -229,5 +232,4 @@ export default function AppIndex() {
     </View>
   );
 }
-
 

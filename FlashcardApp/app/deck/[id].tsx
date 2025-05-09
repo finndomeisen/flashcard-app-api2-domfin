@@ -9,7 +9,9 @@ import { router } from 'expo-router';
 
 type Card = {
   question: string;
-  answer: string;
+  type: 'classic' | 'quiz';
+  answer?: string; // Nur für classic
+  answers?: { text: string; correct: boolean }[]; // Nur für quiz
 };
 
 type Deck = {
@@ -30,6 +32,20 @@ export default function DeckDetail() {
   const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
   const [editQuestion, setEditQuestion] = useState('');
   const [editAnswer, setEditAnswer] = useState('');
+  const [quizMode, setQuizMode] = useState<{
+    active: boolean;
+    currentCardIndex?: number;
+    selectedAnswer?: number;
+    showResult?: boolean;
+  }>({ active: false });
+
+  const [cardType, setCardType] = useState<'classic' | 'quiz'>('classic');
+  const [quizAnswers, setQuizAnswers] = useState([
+    { text: '', correct: false },
+    { text: '', correct: false },
+    { text: '', correct: false },
+    { text: '', correct: false }
+  ]);
 
 
   useEffect(() => {
@@ -50,9 +66,36 @@ export default function DeckDetail() {
       return;
     }
 
-    const newCard: Card = { question, answer };
-    const storedDecks = await AsyncStorage.getItem('decks');
-    let updatedDecks: Deck[] = [];
+
+    if (cardType === 'classic' && answer.trim() === '') {
+      Alert.alert('Fehler', 'Die Antwort darf nicht leer sein.');
+      return;
+    }
+
+    if (cardType === 'quiz') {
+      const emptyAnswer = quizAnswers.some(a => a.text.trim() === '');
+      const noCorrect = !quizAnswers.some(a => a.correct);
+
+     if (emptyAnswer) {
+      Alert.alert('Fehler', 'Alle Antwortfelder müssen ausgefüllt sein.');
+      return;
+    }
+
+        if (noCorrect) {
+      Alert.alert('Fehler', 'Mindestens eine Antwort muss als richtig markiert sein.');
+      return;
+    }
+  }
+
+    const newCard: Card = cardType === 'classic' 
+    ? { question, type: 'classic', answer } 
+    : { question, type: 'quiz', answers: [...quizAnswers] };
+
+
+      const storedDecks = await AsyncStorage.getItem('decks');
+      let updatedDecks: Deck[] = [];
+
+
 
     if (storedDecks) {
       updatedDecks = JSON.parse(storedDecks);
@@ -67,6 +110,17 @@ export default function DeckDetail() {
 
     setQuestion('');
     setAnswer('');
+    setQuizAnswers([
+    { text: '', correct: false },
+    { text: '', correct: false },
+    { text: '', correct: false },
+    { text: '', correct: false }
+  ]);
+  setCardType('classic');
+  setModalVisible(false);
+
+
+
     setModalVisible(false);
   };
   const openEditModal = (index: number) => {
@@ -81,7 +135,11 @@ export default function DeckDetail() {
     if (selectedCardIndex === null || !deck) return;
 
     const updatedCards = [...(deck.cards || [])];
-    updatedCards[selectedCardIndex] = { question: editQuestion, answer: editAnswer };
+    updatedCards[selectedCardIndex] = { 
+      question: editQuestion, 
+      answer: editAnswer, 
+      type: 'classic' // Assuming the edited card is of type 'classic'
+    };
 
     const storedDecks = await AsyncStorage.getItem('decks');
     if (storedDecks) {
@@ -142,7 +200,23 @@ export default function DeckDetail() {
           <TouchableOpacity onLongPress={() => openEditModal(index)}>
             <View style={styles.card}>
               <Text style={styles.cardQuestion}>{item.question}</Text>
-              <Text style={styles.cardAnswer}>{item.answer}</Text>
+              {item.type === 'classic' ? (
+                <Text style={styles.cardAnswer}>{item.answer}</Text>
+              ) : (
+                <View>
+                  {item.answers?.map((a, i) => (
+                    <Text 
+                      key={i} 
+                      style={[
+                        styles.cardAnswer,
+                        a.correct ? { color: 'green', fontWeight: 'bold' } : {}
+                      ]}
+                    >
+                      {i+1}. {a.text}
+                    </Text>
+                  ))}
+                </View>
+              )}
             </View>
           </TouchableOpacity>
         )}
@@ -158,18 +232,81 @@ export default function DeckDetail() {
         <View style={{ flex: 1, backgroundColor: '#000000aa', justifyContent: 'center' }}>
           <View style={{ backgroundColor: 'white', margin: 20, padding: 20, borderRadius: 12 }}>
             <Text style={{ fontSize: 18, marginBottom: 10 }}>Neue Karte erstellen</Text>
+            
+            <View style={{ flexDirection: 'row', marginBottom: 15 }}>
+              <TouchableOpacity
+                style={[
+                  styles.tabButton,
+                  cardType === 'classic' && styles.tabButtonActive
+                ]}
+                onPress={() => setCardType('classic')}
+              >
+                <Text>Klassisch</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.tabButton,
+                  cardType === 'quiz' && styles.tabButtonActive
+                ]}
+                onPress={() => setCardType('quiz')}
+              >
+                <Text>Quiz</Text>
+              </TouchableOpacity>
+            </View>
+
             <TextInput
               placeholder="Frage"
               value={question}
               onChangeText={setQuestion}
               style={styles.input}
             />
-            <TextInput
-              placeholder="Antwort"
-              value={answer}
-              onChangeText={setAnswer}
-              style={styles.input}
-            />
+
+            {cardType === 'classic' ? (
+              <TextInput
+                placeholder="Antwort"
+                value={answer}
+                onChangeText={setAnswer}
+                style={styles.input}
+              />
+            ) : (
+              <View>
+                {quizAnswers.map((answer, index) => (
+                  <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <TextInput
+                      placeholder={`Antwort ${index + 1}`}
+                      value={answer.text}
+                      onChangeText={(text) => {
+                        const newAnswers = [...quizAnswers];
+                        newAnswers[index].text = text;
+                        setQuizAnswers(newAnswers);
+                      }}
+                      style={[styles.input, { flex: 1 }]}
+                    />
+                    <TouchableOpacity
+                      onPress={() => {
+                        const newAnswers = [...quizAnswers];
+                        newAnswers[index].correct = !newAnswers[index].correct;
+                        setQuizAnswers(newAnswers);
+                      }}
+                      style={{
+                        marginLeft: 10,
+                        width: 24,
+                        height: 24,
+                        borderRadius: 12,
+                        borderWidth: 2,
+                        borderColor: answer.correct ? 'green' : 'gray',
+                        backgroundColor: answer.correct ? 'lightgreen' : 'transparent',
+                        justifyContent: 'center',
+                        alignItems: 'center'
+                      }}
+                    >
+                      {answer.correct && <Ionicons name="checkmark" size={16} color="green" />}
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 }}>
               <TouchableOpacity
                 style={[styles.primaryButton, { flex: 1, marginRight: 5 }]}
