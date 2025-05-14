@@ -141,16 +141,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
   },
-  tabButton: {
-  flex: 1,
-  padding: 10,
-  alignItems: 'center',
-  borderBottomWidth: 2,
-  borderBottomColor: 'transparent'
-},
-tabButtonActive: {
-  borderBottomColor: '#007AFF'
-},
   
 
 
