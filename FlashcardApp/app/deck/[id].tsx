@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, Modal, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, FlatList, Modal, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useLocalSearchParams, router } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router'; // useRouter importiert
 import { Ionicons } from '@expo/vector-icons';
 import styles from '../styles';
 
@@ -24,10 +24,6 @@ export default function DeckDetail() {
   const { id } = useLocalSearchParams();
   const [deck, setDeck] = useState<Deck | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [editModalVisible, setEditModalVisible] = useState(false);
-  const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
-  
-  // Formular Zustände
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [cardType, setCardType] = useState<'classic' | 'quiz'>('classic');
@@ -37,6 +33,8 @@ export default function DeckDetail() {
     { id: '3', text: '', correct: false },
     { id: '4', text: '', correct: false }
   ]);
+  
+  const router = useRouter(); // useRouter hook
 
   const loadDeck = async () => {
     try {
@@ -71,7 +69,7 @@ export default function DeckDetail() {
     try {
       const storedDecks = await AsyncStorage.getItem('decks');
       let updatedDecks: Deck[] = [];
-      
+
       if (storedDecks) {
         updatedDecks = JSON.parse(storedDecks);
         const deckIndex = updatedDecks.findIndex(d => d.id === id);
@@ -89,7 +87,6 @@ export default function DeckDetail() {
   const handleSaveCard = async () => {
     if (!deck) return;
 
-    // Validierung
     if (question.trim() === '') {
       Alert.alert('Fehler', 'Die Frage darf nicht leer sein.');
       return;
@@ -119,8 +116,8 @@ export default function DeckDetail() {
       id: Date.now().toString(),
       question: question.trim(),
       type: cardType,
-      ...(cardType === 'classic' 
-        ? { answer: answer.trim() } 
+      ...(cardType === 'classic'
+        ? { answer: answer.trim() }
         : { answers: quizAnswers.map(a => ({ ...a, text: a.text.trim() })) })
     };
 
@@ -134,8 +131,6 @@ export default function DeckDetail() {
     setModalVisible(false);
   };
 
-  // ... (Bearbeitungs- und Löschfunktionen ähnlich wie zuvor)
-
   if (!deck) {
     return (
       <View style={styles.detailContainer}>
@@ -146,7 +141,125 @@ export default function DeckDetail() {
 
   return (
     <View style={[styles.detailContainer, { backgroundColor: deck.color }]}>
-      {/* ... (Rest der Komponente ähnlich wie zuvor, aber mit verbessertem Styling) */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={30} color="black" />
+        </TouchableOpacity>
+        <Text style={styles.title}>{deck.title}</Text>
+      </View>
+
+      <FlatList
+        data={deck.cards}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.card}>
+            <Text style={styles.question}>{item.question}</Text>
+            {item.type === 'classic' ? (
+              <Text style={styles.answer}>{item.answer}</Text>
+            ) : (
+              item.answers?.map((a) => (
+                <Text key={a.id} style={{ color: a.correct ? 'green' : 'black' }}>
+                  - {a.text}
+                </Text>
+              ))
+            )}
+          </View>
+        )}
+      />
+
+      <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
+        <Ionicons name="add" size={30} color="white" />
+      </TouchableOpacity>
+
+      {/* Modal zum Hinzufügen */}
+      <Modal visible={modalVisible} animationType="slide">
+        <ScrollView contentContainerStyle={styles.modalContainer}>
+          <Text style={styles.modalTitle}>Neue Karte hinzufügen</Text>
+
+          {/* Kartentyp-Auswahl */}
+          <View style={{ flexDirection: 'row', marginBottom: 10 }}>
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: cardType === 'classic' ? '#4CAF50' : '#ccc' }]}
+              onPress={() => setCardType('classic')}
+            >
+              <Text style={styles.buttonText}>Classic</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: cardType === 'quiz' ? '#2196F3' : '#ccc' }]}
+              onPress={() => setCardType('quiz')}
+            >
+              <Text style={styles.buttonText}>Quiz</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Frage */}
+          <TextInput
+            placeholder="Frage"
+            style={styles.input}
+            value={question}
+            onChangeText={setQuestion}
+          />
+
+          {/* Klassische Karte */}
+          {cardType === 'classic' && (
+            <TextInput
+              placeholder="Antwort"
+              style={styles.input}
+              value={answer}
+              onChangeText={setAnswer}
+            />
+          )}
+
+          {/* Quizkarte */}
+          {cardType === 'quiz' && quizAnswers.map((a, index) => (
+            <View key={a.id} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+              <TextInput
+                placeholder={`Antwort ${index + 1}`}
+                style={[styles.input, { flex: 1 }]}
+                value={a.text}
+                onChangeText={(text) => {
+                  const updated = [...quizAnswers];
+                  updated[index].text = text;
+                  setQuizAnswers(updated);
+                }}
+              />
+              <TouchableOpacity
+                style={{
+                  marginLeft: 10,
+                  backgroundColor: a.correct ? 'green' : 'gray',
+                  padding: 10,
+                  borderRadius: 5
+                }}
+                onPress={() => {
+                  const updated = quizAnswers.map((ans, i) => ({
+                    ...ans,
+                    correct: i === index
+                  }));
+                  setQuizAnswers(updated);
+                }}
+              >
+                <Ionicons name="checkmark" size={20} color="white" />
+              </TouchableOpacity>
+            </View>
+          ))}
+
+          {/* Buttons */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 }}>
+            <TouchableOpacity style={styles.button} onPress={handleSaveCard}>
+              <Text style={styles.buttonText}>Speichern</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: 'red' }]}
+              onPress={() => {
+                resetForm();
+                setModalVisible(false);
+              }}
+            >
+              <Text style={styles.buttonText}>Abbrechen</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </Modal>
     </View>
   );
 }
