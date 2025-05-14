@@ -141,13 +141,120 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
   },
-  
+  addButton: {
+    backgroundColor: '#ffffffaa',
+    padding: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+   addButtonText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: 'bold',
+  },
+    modalContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+    padding: 20,
+    justifyContent: 'center',
+  },
+  saveButton: {
+    backgroundColor: '#007AFF',
+    padding: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+   saveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  cardTypeToggle: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+    cardTypeButton: {
+    flex: 1,
+    padding: 10,
+    marginHorizontal: 5,
+    backgroundColor: '#ddd',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+    cardTypeButtonActive: {
+    backgroundColor: '#007AFF',
+  },
+  cardTypeButtonText: {
+    color: '#333',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+    cardTypeButtonTextActive: {
+    color: '#fff',
+  },
+    quizAnswerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+    quizAnswerInput: {
+    flex: 1,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 8,
+    marginRight: 10,
+    backgroundColor: '#f9f9f9',
+  },
+
+    quizCorrectButton: {
+    padding: 10,
+    borderRadius: 6,
+    backgroundColor: '#eee',
+  },
+    quizCorrectButtonActive: {
+    backgroundColor: '#4CAF50',
+  },
+    button: {
+    backgroundColor: '#007AFF',
+    padding: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginVertical: 8,
+  },
+    modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
+    color: '#333',
+  },
+    question: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginVertical: 5,
+    color: '#222',
+  },
+    answer: {
+    fontSize: 16,
+    color: '#555',
+    marginBottom: 15,
+  },
+    header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 10,
+    paddingBottom: 10,
+    paddingLeft: 15,
+  },
 
 
-  
-  
 
-  
+
+
 });
 
 export default styles;
